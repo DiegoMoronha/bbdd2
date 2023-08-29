@@ -29,11 +29,11 @@ std::string parse(std::string sql)
     std::vector<std::string> tokens = tokenize(sql, ' ');
     if (tokens[0] == "select")
     {
-        result = "SELECT";
+        result = "SELECT no implementado";
     }
     else if (tokens[0] == "insert")
     {
-        result = "INSERT";
+        result = "INSERT no implementado";
     }
     else
     {

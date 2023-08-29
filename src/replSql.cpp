@@ -18,7 +18,7 @@ int replSql()
         }
         if (parse(input) != "")
         {
-            std::cout << parse(input) << " no implementado" << std::endl;
+            std::cout << parse(input) << std::endl;
         }
     }
 
