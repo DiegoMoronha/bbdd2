@@ -1,8 +1,30 @@
 #include <iostream>
 #include <vector>
+#include <map>
+#include <functional>
 #include <sstream>
 #include <string>
-#include <algorithm> // Para std::transform
+#include <algorithm>
+#include "table.h"
+
+Table table;
+
+std::string dataTable()
+{
+    std::string result = "";
+    result += "Paginas: " + std::to_string(table.pages.size()) + "\n";
+    result += "Registros: " + std::to_string(table.totalRecords);
+
+    return result;
+};
+
+std::map<std::string, std::function<std::string()>> metacommands = {
+    {".table-metadata", dataTable}};
+
+bool isMetacommand(std::string input)
+{
+    return input[0] == '.';
+}
 
 std::string toLower(std::string sentence)
 {
@@ -10,34 +32,153 @@ std::string toLower(std::string sentence)
     return sentence;
 };
 
-// Función para dividir una cadena en tokens
+// Concatena si el token empieza y termina con comillas
+std::string concatIfQuoted(std::vector<std::string> &tokens, std::string token)
+{
+    if (token[0] == '"' && token[token.length() - 1] == '"')
+    {
+        tokens[tokens.size() - 1] += " " + token;
+    }
+    return token;
+};
+
 std::vector<std::string> tokenize(const std::string &str, char delimiter)
 {
+    if (str == "")
+        return std::vector<std::string>(0);
     std::vector<std::string> tokens;
-    std::istringstream tokenStream(toLower(str));
     std::string token;
-    while (std::getline(tokenStream, token, delimiter))
+    bool insideQuotes = false;
+
+    for (char c : toLower(str))
+    {
+        if (c == ' ' && !insideQuotes)
+        {
+            // Si encontramos un espacio fuera de las comillas, agregamos el token actual a la lista
+            if (!token.empty())
+            {
+                tokens.push_back(token);
+                token.clear();
+            }
+        }
+        else if (c == '"')
+        {
+
+            insideQuotes = !insideQuotes;
+            token += c; // Agregamos la comilla al token
+        }
+        else
+        {
+            if (c == ' ')
+            {
+                insideQuotes = !insideQuotes;
+                tokens.push_back(token);
+                token.clear();
+            }
+            // Agregamos el carácter actual al token
+            token += c;
+        }
+    }
+
+    // Agregamos el último token si no está vacío
+    if (!token.empty())
     {
         tokens.push_back(token);
     }
     return tokens;
 };
 
-std::string parse(std::string sql)
+Record validateAndCreateRecord(std::vector<std::string> tokens)
+{
+    Record newRecord;
+    if (tokens.size() == 4)
+    {
+        newRecord.id = std::stoi(tokens[1]);
+        std::strcpy(newRecord.user, tokens[2].c_str());
+        std::strcpy(newRecord.email, tokens[3].c_str());
+
+        return newRecord;
+    }
+    throw std::invalid_argument("Missing or surplus arguments for the table columns.");
+};
+
+std::string select(Table table)
 {
     std::string result = "";
-    std::vector<std::string> tokens = tokenize(sql, ' ');
+    std::vector<std::string> records;
+    for (size_t i = 0; i < table.pages.size(); i++)
+    {
+        std::vector<Record> pageRecords = getRecords(i, table);
+        for (int j = 0; j < table.pages[i].numRecords; j++)
+        {
+            if (j == table.pages[i].numRecords - 1)
+            {
+                result += std::to_string(pageRecords[j].id) + " " + pageRecords[j].user + " " + pageRecords[j].email;
+                break;
+            }
+            result += std::to_string(pageRecords[j].id) + " " + pageRecords[j].user + " " + pageRecords[j].email + "\n";
+        }
+    }
+    return result;
+};
+
+std::string insert(Table &table, std::vector<std::string> recordString)
+{
+    try
+    {
+        Record record = validateAndCreateRecord(recordString);
+        addRecordToTable(table, record);
+        return "INSERT exitoso";
+    }
+    catch (const std::exception &e)
+    {
+        return "Operacion invalida";
+    }
+};
+
+std::string executeCommands(std::vector<std::string> tokens)
+{
+    std::string result = "";
+    if (tokens.empty())
+        return result;
     if (tokens[0] == "select")
     {
-        result = "SELECT no implementado";
+
+        result = select(table);
     }
     else if (tokens[0] == "insert")
     {
-        result = "INSERT no implementado";
+        result = insert(table, tokens);
+    }
+    return result;
+};
+
+std::string executeMetacommand(std::string input)
+{
+    std::string result = "";
+    try
+    {
+        return metacommands.at(input)();
+    }
+    catch (const std::exception &e)
+    {
+        return "Metacomando invalido";
+    }
+};
+
+std::string execute(std::string input)
+{
+    if (isMetacommand(input))
+    {
+        return executeMetacommand(input);
     }
     else
     {
-        result = "";
+        return executeCommands(tokenize(input, ' '));
     }
-    return result;
+}
+
+std::string parse(std::string query)
+{
+    return execute(query);
 };
