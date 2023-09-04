@@ -14,4 +14,10 @@ docker build --pull --rm -f "Dockerfile" -t bbdd2:latest "."
 
 docker run -it --rm bbdd2
 
-ejecutamos make y nos creara un ejecutable llamado sqlDatabase donde inicializara la aplicacion
+### ejecutamos
+
+make all
+
+# nos creara un ejecutable llamado sqlDatabase y lo ejecutamos
+
+./sqlDatabase
