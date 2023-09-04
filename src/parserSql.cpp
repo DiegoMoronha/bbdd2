@@ -6,6 +6,7 @@
 #include <string>
 #include <algorithm>
 #include "table.h"
+#include <any>
 
 Table table;
 
@@ -25,6 +26,58 @@ bool isMetacommand(std::string input)
 {
     return input[0] == '.';
 }
+
+Record validateAndCreateRecord(std::vector<std::string> tokens)
+{
+    Record newRecord;
+    if (tokens.size() == 4)
+    {
+        newRecord.id = std::stoi(tokens[1]);
+        std::strcpy(newRecord.user, tokens[2].c_str());
+        std::strcpy(newRecord.email, tokens[3].c_str());
+
+        return newRecord;
+    }
+    throw std::invalid_argument("Missing or surplus arguments for the table columns.");
+};
+
+std::string select(Table table, std::vector<std::string> tokens)
+{
+    if (tokens.size() > 1)
+        return "Operacion invalida";
+
+    std::string result = "";
+    std::vector<std::string> records;
+    for (size_t i = 0; i < table.pages.size(); i++)
+    {
+        std::vector<Record> pageRecords = getRecords(i, table);
+        for (int j = 0; j < table.pages[i].numRecords; j++)
+        {
+            if (j == table.pages[i].numRecords - 1)
+            {
+                result += std::to_string(pageRecords[j].id) + " " + pageRecords[j].user + " " + pageRecords[j].email;
+                break;
+            }
+            result += std::to_string(pageRecords[j].id) + " " + pageRecords[j].user + " " + pageRecords[j].email + "\n";
+        }
+    }
+
+    return result;
+};
+
+std::string insert(Table &table, std::vector<std::string> recordString)
+{
+    try
+    {
+        Record record = validateAndCreateRecord(recordString);
+        addRecordToTable(table, record);
+        return "INSERT exitoso";
+    }
+    catch (const std::exception &e)
+    {
+        return "Operacion invalida";
+    }
+};
 
 std::string toLower(std::string sentence)
 {
@@ -88,54 +141,6 @@ std::vector<std::string> tokenize(const std::string &str, char delimiter)
     return tokens;
 };
 
-Record validateAndCreateRecord(std::vector<std::string> tokens)
-{
-    Record newRecord;
-    if (tokens.size() == 4)
-    {
-        newRecord.id = std::stoi(tokens[1]);
-        std::strcpy(newRecord.user, tokens[2].c_str());
-        std::strcpy(newRecord.email, tokens[3].c_str());
-
-        return newRecord;
-    }
-    throw std::invalid_argument("Missing or surplus arguments for the table columns.");
-};
-
-std::string select(Table table)
-{
-    std::string result = "";
-    std::vector<std::string> records;
-    for (size_t i = 0; i < table.pages.size(); i++)
-    {
-        std::vector<Record> pageRecords = getRecords(i, table);
-        for (int j = 0; j < table.pages[i].numRecords; j++)
-        {
-            if (j == table.pages[i].numRecords - 1)
-            {
-                result += std::to_string(pageRecords[j].id) + " " + pageRecords[j].user + " " + pageRecords[j].email;
-                break;
-            }
-            result += std::to_string(pageRecords[j].id) + " " + pageRecords[j].user + " " + pageRecords[j].email + "\n";
-        }
-    }
-    return result;
-};
-
-std::string insert(Table &table, std::vector<std::string> recordString)
-{
-    try
-    {
-        Record record = validateAndCreateRecord(recordString);
-        addRecordToTable(table, record);
-        return "INSERT exitoso";
-    }
-    catch (const std::exception &e)
-    {
-        return "Operacion invalida";
-    }
-};
-
 std::string executeCommands(std::vector<std::string> tokens)
 {
     std::string result = "";
@@ -143,12 +148,11 @@ std::string executeCommands(std::vector<std::string> tokens)
         return result;
     if (tokens[0] == "select")
     {
-
-        result = select(table);
+        return select(table, tokens);
     }
     else if (tokens[0] == "insert")
     {
-        result = insert(table, tokens);
+        return insert(table, tokens);
     }
     return result;
 };

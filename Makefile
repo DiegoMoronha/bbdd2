@@ -1,5 +1,5 @@
 CXX = g++
-CXXFLAGS = -std=c++11 -Wall
+CXXFLAGS = -std=c++17 -Wall
 SRC_DIR = src
 OBJ_DIR = obj
 DEP_DIR = dependencies

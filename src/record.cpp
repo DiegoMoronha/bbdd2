@@ -22,6 +22,15 @@ void intToBigEndianBytes(int number, char *buffer, int &offset)
     buffer[offset++] = number & 0xFF;
 }
 
+void bigEndianBytesToInt(int &number, const char *buffer, int &offset)
+{
+    number = (static_cast<unsigned char>(buffer[offset]) << 24) |
+             (static_cast<unsigned char>(buffer[offset + 1]) << 16) |
+             (static_cast<unsigned char>(buffer[offset + 2]) << 8) |
+             static_cast<unsigned char>(buffer[offset + 3]);
+    offset += 4;
+}
+
 void serializeRecord(const Record &record, char *buffer)
 {
     int offset = 0;
@@ -34,11 +43,7 @@ Record deserializeRecord(const char *buffer)
 {
     Record record;
     int offset = 0;
-    record.id = (static_cast<unsigned char>(buffer[offset]) << 24) |
-                (static_cast<unsigned char>(buffer[offset + 1]) << 16) |
-                (static_cast<unsigned char>(buffer[offset + 2]) << 8) |
-                static_cast<unsigned char>(buffer[offset + 3]);
-    offset += 4;
+    bigEndianBytesToInt(record.id, buffer, offset);
     readFromBuffer(buffer, record.user, sizeof(record.user), offset);
     offset++;
     readFromBuffer(buffer, record.email, sizeof(record.email), offset);
