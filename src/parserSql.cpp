@@ -95,6 +95,15 @@ std::string concatIfQuoted(std::vector<std::string> &tokens, std::string token)
     return token;
 };
 
+void addToken(std::vector<std::string> &tokens, std::string &token)
+{
+    if (!token.empty())
+    {
+        tokens.push_back(token);
+        token.clear();
+    }
+}
+
 std::vector<std::string> tokenize(const std::string &str, char delimiter)
 {
     if (str == "")
@@ -107,12 +116,7 @@ std::vector<std::string> tokenize(const std::string &str, char delimiter)
     {
         if (c == ' ' && !insideQuotes)
         {
-            // Si encontramos un espacio fuera de las comillas, agregamos el token actual a la lista
-            if (!token.empty())
-            {
-                tokens.push_back(token);
-                token.clear();
-            }
+            addToken(tokens, token);
         }
         else if (c == '"')
         {
@@ -133,11 +137,7 @@ std::vector<std::string> tokenize(const std::string &str, char delimiter)
         }
     }
 
-    // Agregamos el último token si no está vacío
-    if (!token.empty())
-    {
-        tokens.push_back(token);
-    }
+    addToken(tokens, token);
     return tokens;
 };
 
