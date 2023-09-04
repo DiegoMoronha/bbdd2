@@ -44,7 +44,7 @@ Record validateAndCreateRecord(std::vector<std::string> tokens)
 std::string select(Table table, std::vector<std::string> tokens)
 {
     if (tokens.size() > 1)
-        return "Operacion invalida";
+        return "Operación inválida";
 
     std::string result = "";
     std::vector<std::string> records;
@@ -75,7 +75,7 @@ std::string insert(Table &table, std::vector<std::string> recordString)
     }
     catch (const std::exception &e)
     {
-        return "Operacion invalida";
+        return "Operación inválida";
     }
 };
 
