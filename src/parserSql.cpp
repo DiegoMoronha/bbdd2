@@ -5,16 +5,16 @@
 #include <sstream>
 #include <string>
 #include <algorithm>
-#include "table.h"
 #include <any>
+#include "database.cpp"
 
-Table table;
+Database database("data.db");
 
 std::string dataTable()
 {
     std::string result = "";
-    result += "Paginas: " + std::to_string(table.pages.size()) + "\n";
-    result += "Registros: " + std::to_string(table.totalRecords);
+    result += "Paginas: " + std::to_string(database.numPages()) + "\n";
+    result += "Registros: " + std::to_string(database.numRecords());
 
     return result;
 };
@@ -41,36 +41,20 @@ Record validateAndCreateRecord(std::vector<std::string> tokens)
     throw std::invalid_argument("Missing or surplus arguments for the table columns.");
 };
 
-std::string select(Table table, std::vector<std::string> tokens)
+std::string select(std::vector<std::string> tokens)
 {
     if (tokens.size() > 1)
         return "Operación inválida";
 
-    std::string result = "";
-    std::vector<std::string> records;
-    for (size_t i = 0; i < table.pages.size(); i++)
-    {
-        std::vector<Record> pageRecords = getRecords(i, table);
-        for (int j = 0; j < table.pages[i].numRecords; j++)
-        {
-            if (j == table.pages[i].numRecords - 1)
-            {
-                result += std::to_string(pageRecords[j].id) + " " + pageRecords[j].user + " " + pageRecords[j].email;
-                break;
-            }
-            result += std::to_string(pageRecords[j].id) + " " + pageRecords[j].user + " " + pageRecords[j].email + "\n";
-        }
-    }
-
-    return result;
+    return database.select();
 };
 
-std::string insert(Table &table, std::vector<std::string> recordString)
+std::string insert(std::vector<std::string> recordString)
 {
     try
     {
         Record record = validateAndCreateRecord(recordString);
-        addRecordToTable(table, record);
+        database.insert(record);
         return "INSERT exitoso";
     }
     catch (const std::exception &e)
@@ -148,11 +132,11 @@ std::string executeCommands(std::vector<std::string> tokens)
         return result;
     if (tokens[0] == "select")
     {
-        return select(table, tokens);
+        return select(tokens);
     }
     else if (tokens[0] == "insert")
     {
-        return insert(table, tokens);
+        return insert(tokens);
     }
     return result;
 };
@@ -178,11 +162,22 @@ std::string execute(std::string input)
     }
     else
     {
+        std::vector<std::string> tokens;
+        for (int i = 0; i < 30; i++)
+        {
+            tokens.push_back("insert");
+            tokens.push_back(std::to_string(i));
+            tokens.push_back("user");
+            tokens.push_back("email");
+            insert(tokens);
+            tokens.clear();
+        }
         return executeCommands(tokenize(input, ' '));
     }
 }
 
 std::string parse(std::string query)
 {
+
     return execute(query);
 };

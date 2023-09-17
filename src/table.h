@@ -2,12 +2,12 @@
 #include <string>
 #include <cstring>
 #include "record.h"
-#include "page.h"
+#include "pager.cpp"
 
 struct Table
 {
     int totalRecords;
-    std::vector<Page> pages;
+    Pager *pager;
 };
 
 Record getRecord(int pageIndex, int recordIndex, Table table);

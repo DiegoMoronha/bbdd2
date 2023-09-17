@@ -2,43 +2,49 @@
 
 Record getRecord(int pageIndex, int recordIndex, Table table)
 {
-    // Obtener el bloque de bytes que contiene el record
-    const char *recordBuffer = &table.pages[pageIndex].records[recordIndex * BLOCK_SIZE];
-
-    // Deserializar el record
+    Page *currentPage = table.pager->getPage(pageIndex);
+    const char *recordBuffer = &currentPage->records[recordIndex * BLOCK_SIZE];
     return deserializeRecord(recordBuffer);
 }
 
 std::vector<Record> getRecords(int pageIndex, Table table)
 {
     std::vector<Record> records;
-    const char *recordBuffer = table.pages[pageIndex].records;
-    for (int i = 0; i < table.pages[pageIndex].numRecords; i++)
+    Page *currentPage = table.pager->getPage(pageIndex);
+    const char *recordBuffer = currentPage->records;
+    for (int i = 0; i < currentPage->numRecords; i++)
     {
         records.push_back(deserializeRecord(&recordBuffer[i * BLOCK_SIZE]));
     }
-
     return records;
 }
-
 // add record to table params table and record
 void addRecordToTable(Table &table, Record record)
 {
-    // Serializar el record
+    Page *currentPage;
     char registroBuffer[BLOCK_SIZE];
     serializeRecord(record, registroBuffer);
-    // Encontrar o crear una nueva página
-    if (table.pages.empty() || table.pages.back().numRecords >= PAGE_SIZE / BLOCK_SIZE)
+    if (table.pager->numPages() > 0)
     {
-        Page newPage;
-        newPage.numRecords = 0;
-        table.pages.push_back(newPage); // Nueva página con 0 registros inicialmente
+        currentPage = table.pager->getPage(table.pager->numPages() - 1);
+    }
+    else
+    {
+        currentPage = table.pager->getPage(table.pager->numPages());
     }
 
-    // Agregar el record a la página actual
-    Page &currentPage = table.pages.back();
-    std::memcpy(&currentPage.records[currentPage.numRecords * BLOCK_SIZE],
+    if (currentPage->numRecords >= PAGE_SIZE / BLOCK_SIZE)
+    {
+        std::cout << "New page" << std::endl;
+        Page *newPage = new Page;
+        newPage->numRecords = 0;
+        newPage->records = new char[PAGE_SIZE];
+        table.pager->addPage(newPage);
+        currentPage = table.pager->getPage(table.pager->numPages() - 1);
+    }
+
+    std::memcpy(&currentPage->records[currentPage->numRecords * BLOCK_SIZE],
                 registroBuffer, BLOCK_SIZE);
+    currentPage->numRecords = currentPage->numRecords + 1;
     table.totalRecords++;
-    currentPage.numRecords++;
 }

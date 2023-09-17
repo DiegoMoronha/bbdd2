@@ -2,6 +2,7 @@
 #include <algorithm> // Para std::transform
 #include <string>
 #include "parserSql.h"
+#include "database.cpp"
 
 void printResult(std::string result)
 {
@@ -28,6 +29,8 @@ void printArray(std::vector<std::string> array)
 */
 int replSql()
 {
+    Database database("data.db");
+    // database.openDatabase();
     std::string input;
 
     while (true)
@@ -37,6 +40,7 @@ int replSql()
         if (input == ".exit")
         {
             std::cout << "Terminado" << std::endl;
+            // database.closeDatabase();
             break;
         }
         printResult(parse(input));

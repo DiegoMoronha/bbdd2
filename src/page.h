@@ -3,5 +3,5 @@
 struct Page
 {
     int numRecords;
-    char records[PAGE_SIZE];
+    char *records;
 };
