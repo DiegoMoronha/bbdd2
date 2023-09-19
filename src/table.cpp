@@ -18,7 +18,6 @@ std::vector<Record> getRecords(int pageIndex, Table table)
     }
     return records;
 }
-// add record to table params table and record
 void addRecordToTable(Table &table, Record record)
 {
     Page *currentPage;
@@ -35,7 +34,6 @@ void addRecordToTable(Table &table, Record record)
 
     if (currentPage->numRecords >= PAGE_SIZE / BLOCK_SIZE)
     {
-        std::cout << "New page" << std::endl;
         Page *newPage = new Page;
         newPage->numRecords = 0;
         newPage->records = new char[PAGE_SIZE];

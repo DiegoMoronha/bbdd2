@@ -1,8 +1,9 @@
 
 #include "replSql.h"
+#include <iostream>
 
-int main()
+int main(int argc, char *argv[])
 {
-	replSql();
+	replSql(argv);
 	return 0;
 };

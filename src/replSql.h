@@ -1,3 +1,3 @@
 #include <string>
 
-int replSql();
+int replSql(char *argv[]);

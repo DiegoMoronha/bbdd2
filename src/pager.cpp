@@ -7,21 +7,41 @@
 class Pager
 {
 private:
-    std::map<int, Page *> cache; // Mapa para almacenar páginas en caché
-    std::string filename;        // Nombre del archivo de la base de datos
-    std::fstream file;           // Stream para manejar el archivo
+    std::map<int, Page *> cache;
+    std::string filename;
+    std::fstream file;
 
 public:
     Pager(const std::string &filename) : filename(filename) {}
 
+    Page *createPage()
+    {
+        Page *page = new Page;
+        page->numRecords = 0;
+        page->records = new char[PAGE_SIZE];
+        return page;
+    }
+
     bool openFile()
     {
-        file.open(filename, std::ios::in | std::ios::out | std::ios::binary);
+        file.open(filename, std::ios::in | std::ios::binary);
+        return file.is_open();
+    }
+
+    bool createOrWriteFile()
+    {
+        file.open(filename, std::ios::out | std::ios::binary);
         return file.is_open();
     }
 
     void closeFile()
     {
+        file.close();
+        if (cache.size() > 0)
+        {
+            createOrWriteFile();
+        }
+        writeAllPagesToFile();
         file.close();
     }
 
@@ -31,70 +51,84 @@ public:
         if (it != cache.end())
         {
 
-            return it->second; // Devolver puntero a la página en caché
+            return it->second;
         }
-        // else
-        // {
-        //   Page page;
-        //   readPageFromFile(file, i, page);
-        //   if (page.numRecords == 0)
-        //    {
-        //       page.numRecords = 0;
-        //    }
-        std::cout << "New page in get Page" << std::endl;
-        Page *page = new Page;
-        page->numRecords = 0;
-        page->records = new char[PAGE_SIZE];
-        cache[i] = page; // Guardar página en caché
+
+        if (existPage(i))
+        {
+            Page *page = createPage();
+            readPageFromFile(i, *page);
+            cache[i] = page;
+            return cache[i];
+        }
+
+        cache[i] = createPage();
 
         return cache[i];
-        // }
     }
 
     int numPages() const
     {
-        return cache.size(); // Retorna la cantidad de páginas en la caché
+        return cache.size();
     }
 
     void addPage(Page *&page)
     {
-        int pageNumber = cache.size(); // Página siguiente en la secuencia
+        int pageNumber = cache.size();
         cache[pageNumber] = page;
     }
 
-    void writePageToFile(std::fstream &file, int pageNum, const Page &page)
+    void writePageToFile(int pageNum, const Page &page)
     {
-        // Calcular posición de la página en el archivo
-        int pos = pageNum * sizeof(Page);
-
-        // Ir a la posición correspondiente en el archivo
+        int pos = pageNum * PAGE_SIZE;
         file.seekp(pos);
 
-        // Escribir la página en el archivo
-        file.write(reinterpret_cast<const char *>(&page), sizeof(Page));
+        file.write(page.records, page.numRecords * 291);
     }
 
-    void readPageFromFile(std::fstream &file, int pageNum, Page &page)
+    void readPageFromFile(int pageNum, Page &page)
     {
-        // Calcular posición de la página en el archivo
-        int pos = pageNum * sizeof(Page);
-
-        // Ir a la posición correspondiente en el archivo
+        int totalPages;
+        int totalRecords;
+        calculateMetadata(totalPages, totalRecords);
+        if (totalPages > pageNum)
+        {
+            page.numRecords = 14;
+        }
+        else
+        {
+            page.numRecords = (totalRecords % 14);
+        }
+        int pos = pageNum * PAGE_SIZE;
         file.seekg(pos);
-
-        // Leer la página desde el archivo
-        file.read(reinterpret_cast<char *>(&page), sizeof(Page));
+        file.read(page.records, page.numRecords * 291);
     }
 
-    void calculateMetadata(std::fstream &file, int numPages, int numRecords)
+    bool existPage(int pageNum)
     {
-        file.seekg(0, std::ios::end); // Mover el puntero al final del archivo
-        int fileSize = file.tellg();  // Obtener el tamaño actual del archivo
+        int totalPages;
+        int numrecords;
+        calculateMetadata(totalPages, numrecords);
+        return pageNum <= totalPages;
+    }
 
+    void writeAllPagesToFile()
+    {
+        for (auto &entry : cache)
+        {
+            int pageNumber = entry.first;
+            Page *page = entry.second;
+            writePageToFile(pageNumber, *page);
+            delete entry.second;
+        }
+    }
+
+    int calculateMetadata(int &numPages, int &numRecords)
+    {
+        file.seekg(0, std::ios::end);
+        int fileSize = file.tellg();
         numPages = (fileSize % PAGE_SIZE == 0) ? (fileSize / PAGE_SIZE) : (fileSize / PAGE_SIZE + 1);
-        numRecords = (fileSize % PAGE_SIZE == 0) ? (numPages * 14) : (numPages * 14 + (fileSize % PAGE_SIZE) / 291);
-
-        // Guardar la metadata en el archivo (si es necesario)
-        // En este caso, no guardaremos la metadata, pero puedes hacerlo si lo necesitas
+        numRecords = (fileSize % PAGE_SIZE == 0) ? (numPages * 14) : ((fileSize / PAGE_SIZE) * 14 + (fileSize % PAGE_SIZE) / 291);
+        return fileSize;
     }
 };

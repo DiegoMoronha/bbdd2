@@ -9,12 +9,13 @@ private:
 
 public:
     Database(const std::string &filename) : table({0, new Pager(filename)}) {}
+    int numPages;
 
     std::string select()
     {
         std::string result = "";
         std::vector<std::string> records;
-        for (int i = 0; i < table.pager->numPages(); i++)
+        for (int i = 0; i < pages(); i++)
         {
             std::vector<Record> pageRecords = getRecords(i, table);
             for (int j = 0; j < table.pager->getPage(i)->numRecords; j++)
@@ -45,19 +46,25 @@ public:
         delete table.pager;
     };
 
-    void openDatabase()
+    int pages()
     {
-        table.pager->openFile();
+        return numPages == 0 ? table.pager->numPages() : numPages;
+    }
+
+    bool openDatabase()
+    {
+        bool open = table.pager->openFile();
+        if (!open)
+        {
+            return table.pager->createOrWriteFile();
+        }
+        table.pager->calculateMetadata(numPages, table.totalRecords);
+        return open;
     }
 
     void closeDatabase()
     {
         table.pager->closeFile();
-    }
-
-    int numPages()
-    {
-        return table.pager->numPages();
     }
 
     int numRecords()

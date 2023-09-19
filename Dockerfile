@@ -10,5 +10,6 @@ RUN apt-get update && apt-get install -y \
 WORKDIR /app
 
 COPY . ./
+VOLUME /app
 
 CMD ["bash"]

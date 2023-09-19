@@ -5,21 +5,18 @@
 #include <sstream>
 #include <string>
 #include <algorithm>
-#include <any>
 #include "database.cpp"
 
-Database database("data.db");
-
-std::string dataTable()
+std::string dataTable(Database &database)
 {
     std::string result = "";
-    result += "Paginas: " + std::to_string(database.numPages()) + "\n";
+    result += "Paginas: " + std::to_string(database.pages()) + "\n";
     result += "Registros: " + std::to_string(database.numRecords());
 
     return result;
 };
 
-std::map<std::string, std::function<std::string()>> metacommands = {
+std::map<std::string, std::function<std::string(Database &database)>> metacommands = {
     {".table-metadata", dataTable}};
 
 bool isMetacommand(std::string input)
@@ -41,7 +38,7 @@ Record validateAndCreateRecord(std::vector<std::string> tokens)
     throw std::invalid_argument("Missing or surplus arguments for the table columns.");
 };
 
-std::string select(std::vector<std::string> tokens)
+std::string select(std::vector<std::string> tokens, Database &database)
 {
     if (tokens.size() > 1)
         return "Operación inválida";
@@ -49,7 +46,7 @@ std::string select(std::vector<std::string> tokens)
     return database.select();
 };
 
-std::string insert(std::vector<std::string> recordString)
+std::string insert(std::vector<std::string> recordString, Database &database)
 {
     try
     {
@@ -106,7 +103,7 @@ std::vector<std::string> tokenize(const std::string &str, char delimiter)
         {
 
             insideQuotes = !insideQuotes;
-            token += c; // Agregamos la comilla al token
+            token += c;
         }
         else
         {
@@ -116,7 +113,6 @@ std::vector<std::string> tokenize(const std::string &str, char delimiter)
                 tokens.push_back(token);
                 token.clear();
             }
-            // Agregamos el carácter actual al token
             token += c;
         }
     }
@@ -125,28 +121,28 @@ std::vector<std::string> tokenize(const std::string &str, char delimiter)
     return tokens;
 };
 
-std::string executeCommands(std::vector<std::string> tokens)
+std::string executeCommands(std::vector<std::string> tokens, Database &database)
 {
     std::string result = "";
     if (tokens.empty())
         return result;
     if (tokens[0] == "select")
     {
-        return select(tokens);
+        return select(tokens, database);
     }
     else if (tokens[0] == "insert")
     {
-        return insert(tokens);
+        return insert(tokens, database);
     }
     return result;
 };
 
-std::string executeMetacommand(std::string input)
+std::string executeMetacommand(std::string input, Database &database)
 {
     std::string result = "";
     try
     {
-        return metacommands.at(input)();
+        return metacommands.at(input)(database);
     }
     catch (const std::exception &e)
     {
@@ -154,30 +150,21 @@ std::string executeMetacommand(std::string input)
     }
 };
 
-std::string execute(std::string input)
+std::string execute(std::string input, Database &database)
 {
     if (isMetacommand(input))
     {
-        return executeMetacommand(input);
+        return executeMetacommand(input, database);
     }
     else
     {
         std::vector<std::string> tokens;
-        for (int i = 0; i < 30; i++)
-        {
-            tokens.push_back("insert");
-            tokens.push_back(std::to_string(i));
-            tokens.push_back("user");
-            tokens.push_back("email");
-            insert(tokens);
-            tokens.clear();
-        }
-        return executeCommands(tokenize(input, ' '));
+
+        return executeCommands(tokenize(input, ' '), database);
     }
 }
 
-std::string parse(std::string query)
+std::string parse(std::string query, Database &database)
 {
-
-    return execute(query);
+    return execute(query, database);
 };

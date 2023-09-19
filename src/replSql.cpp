@@ -1,8 +1,7 @@
 #include <iostream>
-#include <algorithm> // Para std::transform
+#include <algorithm>
 #include <string>
 #include "parserSql.h"
-#include "database.cpp"
 
 void printResult(std::string result)
 {
@@ -10,27 +9,10 @@ void printResult(std::string result)
         std::cout << result << std::endl;
 };
 
-/*
-void printArray(std::vector<std::string> array)
+int replSql(char *argv[])
 {
-    std::cout << "Mi vector: [";
-    bool primero = true;
-    for (const auto &elemento : array)
-    {
-        if (!primero)
-        {
-            std::cout << ", ";
-        }
-        std::cout << elemento;
-        primero = false;
-    }
-    std::cout << "]" << std::endl;
-};
-*/
-int replSql()
-{
-    Database database("data.db");
-    // database.openDatabase();
+    Database database(argv[1]);
+    database.openDatabase();
     std::string input;
 
     while (true)
@@ -39,11 +21,11 @@ int replSql()
         std::getline(std::cin, input);
         if (input == ".exit")
         {
+            database.closeDatabase();
             std::cout << "Terminado" << std::endl;
-            // database.closeDatabase();
             break;
         }
-        printResult(parse(input));
+        printResult(parse(input, database));
     }
 
     return 0;
