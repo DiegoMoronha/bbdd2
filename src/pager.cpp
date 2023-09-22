@@ -88,10 +88,18 @@ public:
 
     void readPageFromFile(int pageNum, Page &page)
     {
+        setPageRecords(page, pageNum);
+        int pos = pageNum * PAGE_SIZE;
+        file.seekg(pos);
+        file.read(page.records, page.numRecords * 291);
+    }
+
+    void setPageRecords(Page &page, int pageNum)
+    {
         int totalPages;
         int totalRecords;
         calculateMetadata(totalPages, totalRecords);
-        if (totalPages > pageNum)
+        if (totalPages > pageNum + 1)
         {
             page.numRecords = 14;
         }
@@ -99,9 +107,6 @@ public:
         {
             page.numRecords = (totalRecords % 14);
         }
-        int pos = pageNum * PAGE_SIZE;
-        file.seekg(pos);
-        file.read(page.records, page.numRecords * 291);
     }
 
     bool existPage(int pageNum)
