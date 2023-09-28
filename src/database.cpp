@@ -1,74 +1,72 @@
 #include <string>
-#include <vector>
-#include "table.h"
+#include <iostream>
 
+#include <vector>
+#include "bplusTree.h"
+// #include "table.h"
 class Database
 {
 private:
-    Table table;
+    // Table table;
+    BPlusTree *bPlusTree = new BPlusTree;
 
 public:
-    Database(const std::string &filename) : table({0, new Pager(filename)}) {}
+    Database(const std::string &filename) {} /* table({0, new Pager(filename)})*/
     int numPages;
 
     std::string select()
     {
         std::string result = "";
-        std::vector<std::string> records;
         for (int i = 0; i < pages(); i++)
         {
-            std::vector<Record> pageRecords = getRecords(i, table);
-            for (int j = 0; j < table.pager->getPage(i)->numRecords; j++)
+            std::vector<Record> pageRecords = getRecordsFromLeafNode(bPlusTree);
+            for (int j = 0; j < bPlusTree->num_records; j++)
             {
 
-                if (j == table.pager->getPage(i)->numRecords - 1)
+                if (j == bPlusTree->num_records - 1)
                 {
                     result += std::to_string(pageRecords[j].id) + " " + pageRecords[j].user + " " + pageRecords[j].email;
                     break;
                 }
                 result += std::to_string(pageRecords[j].id) + " " + pageRecords[j].user + " " + pageRecords[j].email + "\n";
             }
-            if (i != table.pager->numPages() - 1)
+            /*if (i != table.pager->numPages() - 1)
             {
                 result += "\n";
-            }
+            }*/
         }
         return result;
     }
 
     void insert(Record record)
     {
-        addRecordToTable(table, record);
+        insertIntoLeafNode(bPlusTree, record);
     }
 
-    void deletePager()
-    {
-        delete table.pager;
+    void deletePager(){
+        //  delete table.pager;
     };
 
     int pages()
     {
-        return numPages == 0 ? table.pager->numPages() : numPages;
+        // return numPages == 0 ? table.pager->numPages() : numPages;
+        return bPlusTree->num_records == 0 ? 0 : 1;
     }
 
     bool openDatabase()
     {
-        bool open = table.pager->openFile();
-        if (!open)
-        {
-            return table.pager->createOrWriteFile();
-        }
-        table.pager->calculateMetadata(numPages, table.totalRecords);
-        return open;
+
+        initializeLeafNode(bPlusTree);
+        return true;
     }
 
     void closeDatabase()
     {
-        table.pager->closeFile();
+        delete bPlusTree;
     }
 
     int numRecords()
     {
-        return table.totalRecords;
+        return bPlusTree->num_records;
     }
 };

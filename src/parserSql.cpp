@@ -30,8 +30,8 @@ Record validateAndCreateRecord(std::vector<std::string> tokens)
     if (tokens.size() == 4)
     {
         newRecord.id = std::stoi(tokens[1]);
-        std::strcpy(newRecord.user, tokens[2].c_str());
-        std::strcpy(newRecord.email, tokens[3].c_str());
+        strcpy(newRecord.user, tokens[2].c_str());
+        strcpy(newRecord.email, tokens[3].c_str());
 
         return newRecord;
     }
@@ -50,6 +50,8 @@ std::string insert(std::vector<std::string> recordString, Database &database)
 {
     try
     {
+        if (database.numRecords() >= 13)
+            return "Split no implementado";
         Record record = validateAndCreateRecord(recordString);
         database.insert(record);
         return "INSERT exitoso";
