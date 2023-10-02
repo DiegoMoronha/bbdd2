@@ -6,6 +6,7 @@
 #include <iostream>
 #include <vector>
 #include "record.h"
+#include <map>
 
 struct BPlusTree
 {
@@ -13,7 +14,7 @@ struct BPlusTree
     unsigned char is_root;   // 1 byte
     int parent_pointer;      // 4 bytes
     int num_records;         // 4 bytes
-    char records[MAX_RECORDS][VALUE_SIZE];
+    std::map<int, char[VALUE_SIZE]> records;
 };
 
 std::vector<Record> getRecordsFromLeafNode(BPlusTree *node);

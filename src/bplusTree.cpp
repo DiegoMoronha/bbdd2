@@ -53,16 +53,18 @@ void initializeLeafNode(BPlusTree *node)
 // Función para insertar un registro en un nodo hoja
 void insertIntoLeafNode(BPlusTree *node, Record record)
 {
-    serializeRecord(record, node->records[node->num_records]);
+    serializeRecord(record, node->records[record.id]);
     setNumRecords(node, getNumRecords(node) + 1);
 };
 
+// get all values deserealized frin a std::map records
 std::vector<Record> getRecordsFromLeafNode(BPlusTree *node)
 {
     std::vector<Record> records;
-    for (int i = 0; i < getNumRecords(node); i++)
+    for (auto &record : node->records)
     {
-        records.push_back(deserializeRecord(node->records[i]));
+        Record deserializedRecord = deserializeRecord(record.second);
+        records.push_back(deserializedRecord);
     }
     return records;
 }
