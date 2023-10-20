@@ -50,8 +50,7 @@ std::string insert(std::vector<std::string> recordString, Database &database)
 {
     try
     {
-        if (database.numRecords() >= 13)
-            return "Split no implementado";
+
         Record record = validateAndCreateRecord(recordString);
         database.insert(record);
         return "INSERT exitoso";

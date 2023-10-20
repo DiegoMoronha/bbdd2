@@ -17,13 +17,14 @@ public:
     std::string select()
     {
         std::string result = "";
-        for (int i = 0; i < pages(); i++)
+        for (int i = 0; i < 1; i++)
         {
-            std::vector<Record> pageRecords = getRecordsFromLeafNode(bPlusTree);
-            for (int j = 0; j < bPlusTree->num_records; j++)
+            std::cout << "bplus node type: " << (bPlusTree->node_type ? "Internal" : "Leaf") << std::endl;
+            std::vector<Record> pageRecords = getRecordsFromLeavesNode(bPlusTree);
+            for (size_t j = 0; j < pageRecords.size(); j++)
             {
 
-                if (j == bPlusTree->num_records - 1)
+                if (j == pageRecords.size() - 1)
                 {
                     result += std::to_string(pageRecords[j].id) + " " + pageRecords[j].user + " " + pageRecords[j].email;
                     break;
@@ -40,7 +41,7 @@ public:
 
     void insert(Record record)
     {
-        insertIntoLeafNode(bPlusTree, record);
+        insertBPlus(bPlusTree, record);
     }
 
     void deletePager(){
@@ -57,6 +58,15 @@ public:
     {
 
         initializeLeafNode(bPlusTree);
+        for (int i = 2; i < 15; i++)
+        {
+            Record record;
+            record.id = i;
+            strcpy(record.user, "user");
+            strcpy(record.email, "email");
+            insert(record);
+        }
+
         return true;
     }
 
