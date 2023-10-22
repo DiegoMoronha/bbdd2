@@ -12,19 +12,20 @@
 #include <map>
 #include <algorithm>
 
-struct BPlusTree
+struct BPlusTreeST
 {
-    unsigned char node_type;   // 1 byte
-    bool is_root;              // 1 byte
-    BPlusTree *parent_pointer; // 4 bytes
-    int num_records;           // 4 bytes
+    unsigned char node_type;     // 1 byte
+    bool is_root;                // 1 byte
+    BPlusTreeST *parent_pointer; // 4 bytes
+    int num_records;             // 4 bytes
     std::map<int, char[VALUE_SIZE]> records;
     // nodo interno exclusivo
-    int num_keys;                                           // 4 bytes
-    BPlusTree *right_child_ptr;                             // 4 bytes
-    std::vector<std::pair<BPlusTree *, int>> key_ptr_pairs; // Hasta 510 pares puntero-clave
+    int num_keys;                                             // 4 bytes
+    BPlusTreeST *right_child_ptr;                             // 4 bytes
+    std::vector<std::pair<BPlusTreeST *, int>> key_ptr_pairs; // Hasta 510 pares puntero-clave
 };
 
-std::vector<Record> getRecordsFromLeavesNode(BPlusTree *node);
-void insertBPlus(BPlusTree *node, Record record);
-void initializeLeafNode(BPlusTree *node, bool is_root = true);
+typedef struct BPlusTreeST *BPlusTree;
+
+std::vector<Record> getRecordsFromLeavesNode(BPlusTree node);
+void insertBPlus(BPlusTree &node, Record record);

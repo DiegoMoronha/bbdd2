@@ -4,7 +4,7 @@
 void copyToBuffer(char *buffer, const char *string, size_t stringSize, int &offset)
 {
     strncpy(&buffer[offset], string, stringSize);
-    offset += stringSize;
+    offset += stringSize - 1;
     buffer[offset++] = '\0';
 }
 
@@ -45,7 +45,6 @@ Record deserializeRecord(const char *buffer)
     int offset = 0;
     bigEndianBytesToInt(record.id, buffer, offset);
     readFromBuffer(buffer, record.user, sizeof(record.user), offset);
-    offset++;
     readFromBuffer(buffer, record.email, sizeof(record.email), offset);
 
     return record;

@@ -8,7 +8,7 @@ class Database
 {
 private:
     // Table table;
-    BPlusTree *bPlusTree = new BPlusTree;
+    BPlusTree bPlusTree = nullptr;
 
 public:
     Database(const std::string &filename) {} /* table({0, new Pager(filename)})*/
@@ -56,14 +56,9 @@ public:
 
     bool openDatabase()
     {
-
-        initializeLeafNode(bPlusTree);
-        for (int i = 2; i < 15; i++)
+        for (int i = 0; i < 13; i++)
         {
-            Record record;
-            record.id = i;
-            strcpy(record.user, "user");
-            strcpy(record.email, "email");
+            Record record = createRecord(i, "user", "email");
             insert(record);
         }
 

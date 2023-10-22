@@ -1,4 +1,5 @@
 #include <vector>
+#include <iostream>
 #include <string>
 #define BLOCK_SIZE 291
 
