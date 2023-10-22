@@ -19,7 +19,6 @@ public:
         std::string result = "";
         for (int i = 0; i < 1; i++)
         {
-            std::cout << "bplus node type: " << (bPlusTree->node_type ? "Internal" : "Leaf") << std::endl;
             std::vector<Record> pageRecords = getRecordsFromLeavesNode(bPlusTree);
             for (size_t j = 0; j < pageRecords.size(); j++)
             {
@@ -56,7 +55,7 @@ public:
 
     bool openDatabase()
     {
-        for (int i = 0; i < 13; i++)
+        for (int i = 0; i < 25; i++)
         {
             Record record = createRecord(i, "user", "email");
             insert(record);
