@@ -29,3 +29,5 @@ typedef struct BPlusTreeST *BPlusTree;
 
 std::vector<Record> getRecordsFromLeavesNode(BPlusTree node);
 void insertBPlus(BPlusTree &node, Record record);
+int countNumRecords(BPlusTree node);
+void destroyBPlusTree(BPlusTree node);
