@@ -170,12 +170,36 @@ bool isFullLeaf(BPlusTree &node)
     return node->num_records >= MAX_RECORDS;
 }
 
+void splitInternalNode(BPlusTree &node, Record record)
+{
+    BPlusTree newInternal = createNode(INTERNAL_NODE);
+    std::vector<std::pair<BPlusTree, int>> keyPtrPairs = node->key_ptr_pairs;
+    int middle = (NODE_SIZE + 1) / 2;
+    for (auto it = std::next(keyPtrPairs.begin(), middle); it != keyPtrPairs.end(); it++)
+    {
+        node->num_keys--;
+        newInternal->num_keys++;
+        newInternal->key_ptr_pairs.push_back(*it);
+    }
+    if (record.id < keyPtrPairs[middle - 1].second)
+    {
+        insertBPlus(node, record);
+    }
+    else
+    {
+        insertBPlus(newInternal, record);
+    }
+    BPlusTree parent = node->parent_pointer;
+    newInternal->parent_pointer = parent;
+}
+
 void decideInsertion(BPlusTree &node, Record record)
 {
     if (node->node_type == INTERNAL_NODE)
     {
         if (node->num_keys >= NODE_SIZE)
         {
+            splitInternalNode(node, record);
             std::cout << "Nodo interno lleno, split no implementado" << std::endl;
             return;
         }
