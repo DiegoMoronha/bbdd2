@@ -47,7 +47,7 @@ public:
 
     bool openDatabase()
     {
-        for (int i = 8; i < 50; i++)
+        for (int i = 8; i < 60; i++)
         {
             auto record = createRecord(i, "user", "email");
             insertBPlus(bPlusTree, record);
@@ -62,6 +62,8 @@ public:
 
     int numRecords()
     {
+        printBPlusTree(bPlusTree);
+
         return countNumRecords(bPlusTree);
     }
 };

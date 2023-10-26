@@ -86,21 +86,22 @@ void splitLeafNodeRoot(BPlusTree &node, Record record)
 {
     node->is_root = false;
     BPlusTree newLeaf = createNode(LEAF_NODE);
-    int middle = MAX_RECORDS / 2;
+    int middle = (MAX_RECORDS + 1) / 2;
     std::vector<Record> records = getRecordsFromLeafNode(node);
     std::sort(records.begin(), records.end(), [](Record a, Record b)
               { return a.id < b.id; });
+    records.push_back(record);
     for (auto it = std::next(records.begin(), middle); it != records.end(); it++)
     {
         node->records.erase(it->id);
         node->num_records--;
         insertBPlus(newLeaf, *it);
     }
-    insertBPlus(newLeaf, record);
+    node->num_records++;
     BPlusTree internal = createNode(INTERNAL_NODE);
     node->parent_pointer = internal;
     newLeaf->parent_pointer = internal;
-    internal->key_ptr_pairs.push_back(std::make_pair(node, records[middle].id));
+    internal->key_ptr_pairs.push_back(std::make_pair(node, records[middle - 1].id));
     internal->num_keys++;
     std::sort(internal->key_ptr_pairs.begin(), internal->key_ptr_pairs.end(), [](std::pair<BPlusTree, int> a, std::pair<BPlusTree, int> b)
               { return a.second < b.second; });
@@ -117,24 +118,36 @@ void splitLeafNode(BPlusTree &node, Record record)
 
     std::sort(records.begin(), records.end(), [](Record a, Record b)
               { return a.id < b.id; });
-    int middle = MAX_RECORDS / 2;
+
+    int middle = (MAX_RECORDS + 1) / 2;
     for (auto it = std::next(records.begin(), middle); it != records.end(); it++)
     {
+
         node->records.erase(it->id);
         node->num_records--;
         insertBPlus(newLeaf, *it);
     }
-    insertBPlus(newLeaf, record);
+    if (record.id < records[middle - 1].id)
+    {
+        insertBPlus(node, record);
+    }
+    else
+    {
+        insertBPlus(newLeaf, record);
+    }
     BPlusTree parent = node->parent_pointer;
     newLeaf->parent_pointer = parent;
     if (parent->key_ptr_pairs[parent->num_keys - 1].second < record.id)
     {
-        parent->key_ptr_pairs.push_back(std::make_pair(parent->right_child_ptr, parent->key_ptr_pairs[parent->num_keys - 1].second));
+        parent->key_ptr_pairs.push_back(std::make_pair(parent->right_child_ptr, records[middle - 1].id));
         parent->right_child_ptr = newLeaf;
     }
     else
     {
-        parent->key_ptr_pairs.push_back(std::make_pair(newLeaf, records[middle].id));
+        int last_key = parent->key_ptr_pairs[parent->num_keys - 1].second;
+        parent->key_ptr_pairs[parent->num_keys - 1].first = node;
+        parent->key_ptr_pairs[parent->num_keys - 1].second = records[middle - 1].id;
+        parent->key_ptr_pairs.push_back(std::make_pair(newLeaf, last_key));
     }
     std::sort(parent->key_ptr_pairs.begin(), parent->key_ptr_pairs.end(), [](std::pair<BPlusTree, int> a, std::pair<BPlusTree, int> b)
               { return a.second < b.second; });
@@ -152,11 +165,6 @@ void splitNode(BPlusTree &node, Record record)
     }
 }
 
-bool canInsert(BPlusTree &node, std::pair<BPlusTree, int> keyPtrPair, Record record)
-{
-    return keyPtrPair.first->num_records < MAX_RECORDS && record.id < keyPtrPair.second;
-}
-
 bool isFullLeaf(BPlusTree &node)
 {
     return node->num_records >= MAX_RECORDS;
@@ -166,10 +174,15 @@ void decideInsertion(BPlusTree &node, Record record)
 {
     if (node->node_type == INTERNAL_NODE)
     {
+        if (node->num_keys >= NODE_SIZE)
+        {
+            std::cout << "Nodo interno lleno, split no implementado" << std::endl;
+            return;
+        }
 
         for (auto &keyPtrPair : node->key_ptr_pairs)
         {
-            if (canInsert(node, keyPtrPair, record))
+            if (record.id < keyPtrPair.second)
             {
                 insertBPlus(keyPtrPair.first, record);
                 return;
@@ -221,7 +234,6 @@ std::vector<Record> getRecordsFromLeavesNode(BPlusTree node)
         for (auto &keyPtrPair : node->key_ptr_pairs)
         {
             std::vector<Record> recordsFromChild = getRecordsFromLeafNode(keyPtrPair.first);
-            std::cout << "vectors count: " << recordsFromChild.size() << std::endl;
             records.insert(records.end(), recordsFromChild.begin(), recordsFromChild.end());
         }
         std::vector<Record> recordsFromRightChild = getRecordsFromLeafNode(node->right_child_ptr);
@@ -267,5 +279,36 @@ void destroyBPlusTree(BPlusTree node)
         }
         destroyBPlusTree(node->right_child_ptr);
         delete node;
+    }
+}
+
+void printBPlusTree(BPlusTree &node)
+{
+    if (node->node_type == LEAF_NODE)
+    {
+        std::cout << "Leaf node" << std::endl;
+        std::cout << "Num records: " << node->num_records << std::endl;
+        std::cout << "Records: " << std::endl;
+        for (auto &record : getRecordsFromLeafNode(node))
+        {
+            std::cout << record.id << " " << record.email << std::endl;
+        }
+    }
+    else
+    {
+        std::cout << "Internal node" << std::endl;
+        std::cout << "Num keys: " << node->num_keys << std::endl;
+        std::cout << "Keys: " << std::endl;
+        for (auto &keyPtrPair : node->key_ptr_pairs)
+        {
+            std::cout << keyPtrPair.second << std::endl;
+        }
+        for (auto &keyPtrPair : node->key_ptr_pairs)
+        {
+            std::cout << "Left child: " << std::endl;
+            printBPlusTree(keyPtrPair.first);
+        }
+        std::cout << "Right child: " << std::endl;
+        printBPlusTree(node->right_child_ptr);
     }
 }
