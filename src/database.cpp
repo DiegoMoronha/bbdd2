@@ -62,6 +62,7 @@ public:
 
     int numRecords()
     {
+        printBPlusTree(bPlusTree);
         return countNumRecords(bPlusTree);
     }
 };

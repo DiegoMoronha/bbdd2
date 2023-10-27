@@ -1,7 +1,7 @@
 #define MAX_RECORDS 13
 #define KEY_SIZE 4
 #define VALUE_SIZE 291
-#define NODE_SIZE 510
+#define NODE_SIZE 5
 #define LEAF_NODE 0
 #define INTERNAL_NODE 1
 
