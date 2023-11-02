@@ -16,7 +16,7 @@ public:
     std::string select()
     {
         std::string result = "";
-        std::vector<Record> pageRecords = getRecordsFromLeavesNode(bPlusTree);
+        std::vector<Record> pageRecords = getRecords(bPlusTree);
         for (size_t j = 0; j < pageRecords.size(); j++)
         {
 
@@ -27,7 +27,6 @@ public:
             }
             result += std::to_string(pageRecords[j].id) + " " + pageRecords[j].user + " " + pageRecords[j].email + "\n";
         }
-
         return result;
     }
 
@@ -47,7 +46,7 @@ public:
 
     bool openDatabase()
     {
-        for (int i = 8; i < 60; i++)
+        for (int i = 3; i < 12; i++)
         {
             auto record = createRecord(i, "user", "email");
             insertBPlus(bPlusTree, record);
@@ -62,7 +61,6 @@ public:
 
     int numRecords()
     {
-        printBPlusTree(bPlusTree);
         return countNumRecords(bPlusTree);
     }
 };
