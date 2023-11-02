@@ -1,4 +1,4 @@
-#define MAX_RECORDS 4
+#define MAX_RECORDS 3
 #define KEY_SIZE 4
 #define VALUE_SIZE 291
 #define NODE_SIZE 2
@@ -46,3 +46,4 @@ void insertBPlus(BPlusTree &node, Record record);
 int countNumRecords(BPlusTree node);
 void destroyBPlusTree(BPlusTree &node);
 void printBPlusTree(BPlusTree node);
+void insertB(BPlusTree &node, Record record);

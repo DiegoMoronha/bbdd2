@@ -32,7 +32,7 @@ public:
 
     void insert(Record record)
     {
-        insertBPlus(bPlusTree, record);
+        insertB(bPlusTree, record);
     }
 
     void deletePager(){
@@ -46,10 +46,10 @@ public:
 
     bool openDatabase()
     {
-        for (int i = 3; i < 12; i++)
+        for (int i = 3; i < 7; i++)
         {
             auto record = createRecord(i, "user", "email");
-            insertBPlus(bPlusTree, record);
+            insert(record);
         }
         return true;
     }
@@ -61,6 +61,7 @@ public:
 
     int numRecords()
     {
+        printBPlusTree(bPlusTree);
         return countNumRecords(bPlusTree);
     }
 };

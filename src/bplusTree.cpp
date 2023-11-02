@@ -150,7 +150,7 @@ void splitInternalNode(BPlusTree &node)
     }
     else
     {
-        }
+    }
 }
 
 void splitLeafNodeRoot(BPlusTree &node, Record record)
@@ -250,13 +250,14 @@ bool isFullLeaf(BPlusTree &node)
     return node->num_records >= MAX_RECORDS;
 }
 
-void initializeNodeIsNull(BPlusTree &node)
+BPlusTree initializeNodeIsNull(BPlusTree &node)
 {
     if (node == nullptr)
     {
         node = createNode(LEAF_NODE);
         node->is_root = true;
     }
+    return node;
 }
 
 void splitInternalNode2(BPlusTree &node)
@@ -437,5 +438,143 @@ void destroyBPlusTree(BPlusTree &node)
         }
         destroyBPlusTree(node->right_child_ptr);
         delete node;
+    }
+}
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+void checkRightChild(BPlusTree &parent, int key_to_insert, BPlusTree &new_node)
+{
+    if (parent->key_ptr_pairs[parent->num_keys - 1].second < key_to_insert)
+    {
+        parent->key_ptr_pairs.push_back({parent->right_child_ptr, key_to_insert});
+        parent->right_child_ptr = new_node;
+    }
+    else
+    {
+        parent->key_ptr_pairs.push_back({new_node, key_to_insert});
+    }
+    new_node->parent_pointer = parent;
+}
+void splitInternalNodeV2(BPlusTree &node)
+{
+    BPlusTree new_node = createNode(INTERNAL_NODE);
+    int mid_index = node->num_keys / 2;
+    int mid_key = node->key_ptr_pairs[mid_index].second;
+
+    new_node->key_ptr_pairs.insert(new_node->key_ptr_pairs.begin(), node->key_ptr_pairs.begin() + mid_index + 1, node->key_ptr_pairs.end());
+    node->key_ptr_pairs.erase(node->key_ptr_pairs.begin() + mid_index, node->key_ptr_pairs.end());
+    node->num_keys = node->key_ptr_pairs.size();
+    new_node->num_keys = new_node->key_ptr_pairs.size();
+
+    if (node->is_root)
+    {
+        BPlusTree new_root = createNode(INTERNAL_NODE);
+        new_root->is_root = true;
+        new_root->num_keys++;
+        new_root->key_ptr_pairs.push_back({node, mid_key});
+        new_root->right_child_ptr = new_node;
+        node->is_root = false;
+        node->parent_pointer = new_root;
+        new_node->parent_pointer = new_root;
+        printBPlusTree(new_root);
+        node = new_root; // Actualiza el puntero del nodo a la nueva raíz
+    }
+    else
+    {
+        BPlusTree parent = node->parent_pointer;
+        checkRightChild(parent, mid_key, new_node);
+        parent->num_keys++;
+        std::sort(parent->key_ptr_pairs.begin(), parent->key_ptr_pairs.end(), [](std::pair<BPlusTree, int> a, std::pair<BPlusTree, int> b)
+                  { return a.second < b.second; });
+
+        if (parent->num_keys > NODE_SIZE)
+        {
+            splitInternalNodeV2(parent);
+        }
+    }
+}
+
+void splitLeafNodeV2(BPlusTree &node)
+{
+    BPlusTree new_node = createNode(LEAF_NODE);
+
+    int mid_index = node->num_records / 2;
+    auto it = node->records.begin();
+    std::advance(it, mid_index);
+
+    new_node->records.insert(it, node->records.end());
+    node->records.erase(it, node->records.end());
+
+    node->num_records = node->records.size();
+    new_node->num_records = new_node->records.size();
+    if (node->is_root)
+    {
+        BPlusTree new_root = createNode(INTERNAL_NODE);
+        new_root->is_root = true;
+        new_root->num_keys++;
+        new_root->key_ptr_pairs.push_back({node, it->first});
+        new_root->right_child_ptr = new_node;
+
+        node->is_root = false;
+        node->parent_pointer = new_root;
+        new_node->parent_pointer = new_root;
+
+        node = new_root; // Actualiza el puntero del nodo a la nueva raíz
+    }
+    else
+    {
+
+        int key_to_insert = it->first;
+        BPlusTree parent = node->parent_pointer;
+        checkRightChild(parent, key_to_insert, new_node);
+        parent->num_keys++;
+        std::sort(parent->key_ptr_pairs.begin(), parent->key_ptr_pairs.end(), [](std::pair<BPlusTree, int> a, std::pair<BPlusTree, int> b)
+                  { return a.second < b.second; });
+        if (parent->num_keys > NODE_SIZE)
+        {
+            splitInternalNodeV2(parent);
+        }
+    }
+}
+
+void insertInLeaf(BPlusTree &root, Record record)
+{
+    serializeRecord(record, root->records[record.id]);
+    root->num_records++;
+}
+
+void insertB(BPlusTree &root, Record record)
+{
+    initializeNodeIsNull(root);
+
+    if (root->node_type == LEAF_NODE)
+    {
+        insertInLeaf(root, record);
+
+        if (isFullLeaf(root))
+        {
+            splitLeafNodeV2(root);
+            return;
+        }
+    }
+    else
+    {
+        for (auto &keyPtrPair : root->key_ptr_pairs)
+        {
+            if (record.id < keyPtrPair.second)
+            {
+                insertB(keyPtrPair.first, record);
+                return;
+            }
+        }
+        insertB(root->right_child_ptr, record);
     }
 }
