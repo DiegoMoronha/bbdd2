@@ -289,7 +289,6 @@ BPlusTree splitLeafNodeV2(BPlusTree node)
     }
     else
     {
-        std::cout << "no es root" << std::endl;
         int key_to_insert = it->first;
 
         BPlusTree parent = node->parent_pointer;
