@@ -46,7 +46,7 @@ public:
 
     bool openDatabase()
     {
-        for (int i = 3; i < 7; i++)
+        for (int i = 3; i < 6; i++)
         {
             auto record = createRecord(i, "user", "email");
             insert(record);
@@ -56,7 +56,6 @@ public:
 
     void closeDatabase()
     {
-        destroyBPlusTree(bPlusTree);
     }
 
     int numRecords()
