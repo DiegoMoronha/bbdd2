@@ -285,7 +285,7 @@ BPlusTree splitLeafNodeV2(BPlusTree node)
         node->is_root = false;
         node->parent_pointer = new_root;
         new_node->parent_pointer = new_root;
-        return new_node; // Actualiza el puntero del nodo a la nueva raíz
+        return new_root; // Actualiza el puntero del nodo a la nueva raíz
     }
     else
     {
