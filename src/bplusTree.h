@@ -1,7 +1,7 @@
 #define MAX_RECORDS 3
 #define KEY_SIZE 4
 #define VALUE_SIZE 291
-#define NODE_SIZE 2
+#define NODE_SIZE 3
 #define LEAF_NODE 0
 #define INTERNAL_NODE 1
 
@@ -13,37 +13,49 @@
 #include <map>
 #include <algorithm>
 
-struct BPlusTreeST
+struct BPlusNode
 {
-    unsigned char node_type;     // 1 byte
-    bool is_root;                // 1 byte
-    BPlusTreeST *parent_pointer; // 4 bytes
-    int num_records;             // 4 bytes
-    std::map<int, char[VALUE_SIZE]> records;
+    unsigned char node_type;   // 1 byte
+    bool is_root;              // 1 byte
+    BPlusNode *parent_pointer; // 4 bytes
+    int num_records;           // 4 bytes
+    std::pair<int, char[VALUE_SIZE]> **records;
     // nodo interno exclusivo
-    int num_keys;                                             // 4 bytes
-    BPlusTreeST *right_child_ptr;                             // 4 bytes
-    std::vector<std::pair<BPlusTreeST *, int>> key_ptr_pairs; // Hasta 510 pares puntero-clave
+    int num_keys;                                // 4 bytes
+    BPlusNode *right_child_ptr;                  // 4 bytes
+    std::pair<BPlusNode *, int> **key_ptr_pairs; // Hasta 510 pares puntero-clave
 
-    ~BPlusTreeST()
+    BPlusNode(unsigned char node_type, int max_records = MAX_RECORDS, int max_keys = NODE_SIZE)
     {
-        delete parent_pointer;
-        delete right_child_ptr;
-        if (node_type == INTERNAL_NODE)
-        {
-            for (auto pair : key_ptr_pairs)
-            {
-                delete pair.first;
-            }
-        }
-    }
+        this->node_type = node_type;
+        this->is_root = false;
+        this->parent_pointer = nullptr;
+        this->right_child_ptr = nullptr;
+        this->records = new std::pair<int, char[VALUE_SIZE]> *[max_records];
+        this->key_ptr_pairs = new std::pair<BPlusNode *, int> *[max_keys];
+        this->num_keys = 0;
+        this->num_records = 0;
+    };
 };
 
-typedef struct BPlusTreeST *BPlusTree;
+struct BPlusTree
+{
+    BPlusNode *root;
+    int totalRecords;
+    int totalNodes;
+    int internalSize;
+    int leafSize;
 
-std::vector<Record> getRecords(BPlusTree node);
-void insertBPlus(BPlusTree &node, Record record);
-int countNumRecords(BPlusTree node);
-void destroyBPlusTree(BPlusTree &node);
-void printBPlusTree(BPlusTree node);
-void insertB(BPlusTree &node, Record record);
+    BPlusTree(int internalSize = NODE_SIZE, int leafSize = MAX_RECORDS)
+    {
+        this->root = nullptr;
+        this->internalSize = internalSize;
+        this->leafSize = leafSize;
+        this->totalRecords = 0;
+        this->totalNodes = 0;
+    };
+
+public:
+    void Insert(Record record);
+    std::vector<Record> GetRecords();
+};

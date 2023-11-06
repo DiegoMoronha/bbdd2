@@ -1,342 +1,247 @@
 #include "bplusTree.h"
 
-char getNodeType(const BPlusTree node)
+BPlusNode *get_root_tree(BPlusNode *cursor)
 {
-    return node->node_type;
-}
-
-void setNodeType(BPlusTree node, char value)
-{
-    node->node_type = value;
-}
-
-char getIsRoot(const BPlusTree node)
-{
-    return node->is_root;
-}
-
-void setIsRoot(BPlusTree node, char value)
-{
-    node->is_root = value;
-}
-
-// Getter para parent_pointer
-BPlusTree getParentPointer(const BPlusTree node)
-{
-    return node->parent_pointer;
-}
-
-// Setter para parent_pointer
-void setParentPointer(BPlusTree node, BPlusTree value)
-{
-    node->parent_pointer = value;
-}
-
-int getNumRecords(const BPlusTree node)
-{
-    return node->num_records;
-}
-
-void setNumRecords(BPlusTree node, int value)
-{
-    node->num_records = value;
-}
-
-int getNumKeys(const BPlusTree node)
-{
-    return node->num_keys;
-}
-
-void setNumKeys(BPlusTree node, int value)
-{
-    node->num_keys = value;
-}
-
-void setRightChildPtr(BPlusTree node, BPlusTree value)
-{
-    node->right_child_ptr = value;
-}
-
-std::vector<Record> getRecordsFromLeafNode(BPlusTree node)
-{
-    std::vector<Record> records;
-    for (const auto &entry : node->records)
+    if (cursor->parent_pointer == nullptr)
     {
-        records.push_back(deserializeRecord(entry.second));
-    }
-
-    return records;
-}
-
-BPlusTree createNode(unsigned char node_type)
-{
-    BPlusTree node = new BPlusTreeST();
-    node->node_type = node_type;
-    node->is_root = false;
-    node->parent_pointer = nullptr;
-    node->num_records = 0;
-    node->num_keys = 0;
-    node->right_child_ptr = nullptr;
-    node->key_ptr_pairs.clear();
-    node->records.clear();
-    return node;
-}
-
-bool isFullLeaf(BPlusTree &node)
-{
-    return node->num_records >= MAX_RECORDS;
-}
-
-BPlusTree initializeNodeIsNull(BPlusTree &node)
-{
-    if (node == nullptr)
-    {
-        node = createNode(LEAF_NODE);
-        node->is_root = true;
-    }
-    return node;
-}
-
-std::vector<Record> getRecordsFromLeavesNode(BPlusTree node)
-{
-    if (node == nullptr)
-    {
-        return std::vector<Record>();
-    }
-    std::vector<Record> records;
-    if (node->node_type != LEAF_NODE)
-    {
-        for (auto &keyPtrPair : node->key_ptr_pairs)
-        {
-            if (keyPtrPair.first->node_type == LEAF_NODE)
-            {
-                std::vector<Record> recordsFromChild = getRecordsFromLeafNode(keyPtrPair.first);
-                records.insert(records.end(), recordsFromChild.begin(), recordsFromChild.end());
-            }
-            else
-            {
-                std::vector<Record> recordsFromChild = getRecordsFromLeavesNode(keyPtrPair.first);
-                records.insert(records.end(), recordsFromChild.begin(), recordsFromChild.end());
-            }
-        }
-
-        if (node->right_child_ptr->node_type == LEAF_NODE)
-        {
-            std::vector<Record> recordsFromRightChild = getRecordsFromLeafNode(node->right_child_ptr);
-            records.insert(records.end(), recordsFromRightChild.begin(), recordsFromRightChild.end());
-        }
-        else
-        {
-            std::vector<Record> recordsFromRightChild = getRecordsFromLeavesNode(node->right_child_ptr);
-            records.insert(records.end(), recordsFromRightChild.begin(), recordsFromRightChild.end());
-        }
+        return cursor;
     }
     else
     {
-        return getRecordsFromLeafNode(node);
+        return get_root_tree(cursor->parent_pointer);
     }
-    return records;
 }
 
-std::vector<Record> getRecords(BPlusTree node)
+void printBtree(BPlusNode *cursor, int level)
 {
-    return getRecordsFromLeavesNode(node);
-}
-
-int countNumRecords(BPlusTree node)
-{
-    if (node->node_type == LEAF_NODE)
+    if (cursor == nullptr)
     {
-        return node->num_records;
+        return;
+    }
+    if (cursor->node_type != LEAF_NODE)
+    {
+        for (int i = 0; i < cursor->num_keys; i++)
+        {
+            std::cout << "level: " << level << " key: " << cursor->key_ptr_pairs[i]->second << std::endl;
+            printBtree(cursor->key_ptr_pairs[i]->first, level + 1);
+        }
+        printBtree(cursor->right_child_ptr, level + 1);
     }
     else
     {
-        int numRecords = 0;
-        for (auto &keyPtrPair : node->key_ptr_pairs)
+        for (int i = 0; i < cursor->num_records; i++)
         {
-            numRecords += countNumRecords(keyPtrPair.first);
+            std::cout << "------------------------------------------------" << std::endl;
+            std::cout << "level: " << level << " record id: " << cursor->records[i]->first << std::endl;
+            std::cout << "parent: " << (cursor->parent_pointer != nullptr ? (cursor->parent_pointer->key_ptr_pairs[0]->second) : -1) << std::endl;
         }
-        numRecords += countNumRecords(node->right_child_ptr);
-        return numRecords;
     }
 }
 
-void printBPlusTree(BPlusTree node)
+void get_records_kptr(BPlusNode *cursor, std::vector<Record> &records)
 {
-    if (node == nullptr)
+    if (cursor == nullptr)
     {
-        std::cout << "Node is null" << std::endl;
         return;
     }
 
-    if (node->node_type == LEAF_NODE)
+    if (cursor->node_type != LEAF_NODE)
     {
-        std::cout << "Leaf node" << std::endl;
-        std::cout << "Num records: " << node->num_records << std::endl;
-        std::cout << "Records: " << std::endl;
-        for (auto &record : getRecordsFromLeafNode(node))
+        for (int i = 0; i < cursor->num_keys; i++)
         {
-            std::cout << record.id << " " << record.email << std::endl;
+            get_records_kptr(cursor->key_ptr_pairs[i]->first, records);
         }
+        get_records_kptr(cursor->right_child_ptr, records);
     }
     else
     {
-        std::cout << "Internal node: " << node->key_ptr_pairs[0].second << std::endl;
-        std::cout << "Num keys: " << node->num_keys << std::endl;
-        for (auto &keyPtrPair : node->key_ptr_pairs)
+        for (int i = 0; i < cursor->num_records; i++)
         {
-            std::cout << "Left child of: " << keyPtrPair.second << std::endl;
-            printBPlusTree(keyPtrPair.first);
-        }
-        if (node->right_child_ptr != nullptr)
-        {
-            std::cout << "Right child of: " << node->key_ptr_pairs[node->num_keys - 1].second << std::endl;
-
-            printBPlusTree(node->right_child_ptr);
+            records.push_back(deserializeRecord(cursor->records[i]->second));
         }
     }
 }
 
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-void checkRightChild(BPlusTree parent, int key_to_insert, BPlusTree new_node)
+BPlusNode *findLeaf(BPlusNode *cursor, int key)
 {
-    if (parent->key_ptr_pairs[parent->num_keys - 1].second < key_to_insert)
+    if (cursor->node_type == LEAF_NODE)
     {
-        parent->key_ptr_pairs.push_back({parent->right_child_ptr, key_to_insert});
-        parent->right_child_ptr = new_node;
+        return cursor;
     }
     else
     {
-        parent->key_ptr_pairs.push_back({new_node, key_to_insert});
-    }
-    new_node->parent_pointer = parent;
-}
-
-BPlusTree splitInternalNodeV2(BPlusTree node)
-{
-    BPlusTree new_node = createNode(INTERNAL_NODE);
-    int mid_index = node->num_keys / 2;
-    int mid_key = node->key_ptr_pairs[mid_index].second;
-    BPlusTree left_child = node->key_ptr_pairs[mid_index].first;
-    BPlusTree right_child = node->right_child_ptr;
-    node->right_child_ptr = left_child;
-    new_node->key_ptr_pairs.insert(new_node->key_ptr_pairs.begin(), node->key_ptr_pairs.begin() + mid_index + 1, node->key_ptr_pairs.end());
-    node->key_ptr_pairs.erase(node->key_ptr_pairs.begin() + mid_index, node->key_ptr_pairs.end());
-    node->num_keys = node->key_ptr_pairs.size();
-    new_node->num_keys = new_node->key_ptr_pairs.size();
-    new_node->right_child_ptr = right_child;
-    if (node->is_root)
-    {
-        BPlusTree new_root = createNode(INTERNAL_NODE);
-        new_root->is_root = true;
-        new_root->num_keys++;
-        new_root->key_ptr_pairs.push_back({node, mid_key});
-        new_root->right_child_ptr = new_node;
-        node->is_root = false;
-        node->parent_pointer = new_root;
-        new_node->parent_pointer = new_root;
-        std::cout << "es root split internal" << std::endl;
-        return new_root; // Actualiza el puntero del nodo a la nueva raíz
-    }
-    else
-    {
-        BPlusTree parent = node->parent_pointer;
-        checkRightChild(parent, mid_key, new_node);
-        parent->num_keys++;
-        std::sort(parent->key_ptr_pairs.begin(), parent->key_ptr_pairs.end(), [](std::pair<BPlusTree, int> a, std::pair<BPlusTree, int> b)
-                  { return a.second < b.second; });
-
-        if (parent->num_keys > NODE_SIZE)
+        for (int i = 0; i < cursor->num_keys; i++)
         {
-            return splitInternalNodeV2(parent);
-        }
-    }
-}
-
-BPlusTree splitLeafNodeV2(BPlusTree node)
-{
-    BPlusTree new_node = createNode(LEAF_NODE);
-
-    int mid_index = node->num_records / 2;
-    auto it = node->records.begin();
-    std::advance(it, mid_index);
-
-    new_node->records.insert(it, node->records.end());
-    node->records.erase(it, node->records.end());
-    node->num_records = node->records.size();
-    new_node->num_records = new_node->records.size();
-    if (node->is_root)
-    {
-
-        BPlusTree new_root = createNode(INTERNAL_NODE);
-        new_root->is_root = true;
-        new_root->num_keys++;
-        new_root->key_ptr_pairs.push_back({node, it->first});
-        new_root->right_child_ptr = new_node;
-        node->is_root = false;
-        node->parent_pointer = new_root;
-        new_node->parent_pointer = new_root;
-        return new_root; // Actualiza el puntero del nodo a la nueva raíz
-    }
-    else
-    {
-        int key_to_insert = it->first;
-
-        BPlusTree parent = node->parent_pointer;
-        checkRightChild(parent, key_to_insert, new_node);
-        parent->num_keys++;
-        std::sort(parent->key_ptr_pairs.begin(), parent->key_ptr_pairs.end(), [](std::pair<BPlusTree, int> a, std::pair<BPlusTree, int> b)
-                  { return a.second < b.second; });
-
-        if (parent->num_keys > NODE_SIZE)
-        {
-
-            return splitInternalNodeV2(parent);
-        }
-
-        return new_node;
-    }
-}
-
-void insertInLeaf(BPlusTree root, Record record)
-{
-    serializeRecord(record, root->records[record.id]);
-    root->num_records++;
-}
-
-void insertB(BPlusTree &root, Record record)
-{
-    initializeNodeIsNull(root);
-    if (root->node_type == LEAF_NODE)
-    {
-        insertInLeaf(root, record);
-        if (isFullLeaf(root))
-        {
-
-            root = splitLeafNodeV2(root);
-            return;
-            ;
-        }
-    }
-    else
-    {
-        for (auto &keyPtrPair : root->key_ptr_pairs)
-        {
-            if (record.id < keyPtrPair.second)
+            if (key < cursor->key_ptr_pairs[i]->second)
             {
-
-                insertB(keyPtrPair.first, record);
+                return findLeaf(cursor->key_ptr_pairs[i]->first, key);
             }
         }
-        insertB(root->right_child_ptr, record);
+        return findLeaf(cursor->right_child_ptr, key);
     }
+}
+
+void insert_record(std::pair<int, char[VALUE_SIZE]> **records, Record record, int lenRecords)
+{
+
+    int pos = lenRecords;
+    for (int i = 0; i < lenRecords; i++)
+    {
+        if (record.id < records[i]->first)
+        {
+            pos = i;
+            break;
+        }
+    }
+    for (int i = lenRecords; i > pos; i--)
+    {
+        records[i] = records[i - 1];
+    }
+    records[pos] = new std::pair<int, char[VALUE_SIZE]>;
+    records[pos]->first = record.id;
+    serializeRecord(record, records[pos]->second);
+}
+
+void insert_record_leaf(BPlusNode *&cursor, Record record)
+{
+    insert_record(cursor->records, record, cursor->num_records);
+    cursor->num_records++;
+}
+
+BPlusNode *update_parent(BPlusNode *&cursor, BPlusNode *&rightNode)
+{
+
+    BPlusNode *parent = cursor->parent_pointer;
+    int pos = parent->num_keys;
+    for (int i = 0; i < parent->num_keys; i++)
+    {
+        if (cursor->records[0]->first < parent->key_ptr_pairs[i]->second)
+        {
+            pos = i;
+            break;
+        }
+    }
+    for (int i = parent->num_keys; i > pos; i--)
+    {
+        parent->key_ptr_pairs[i] = parent->key_ptr_pairs[i - 1];
+    }
+    parent->key_ptr_pairs[pos] = new std::pair<BPlusNode *, int>;
+    parent->key_ptr_pairs[pos]->first = cursor;
+    parent->key_ptr_pairs[pos]->second = rightNode->node_type == LEAF_NODE ? rightNode->records[0]->first : rightNode->key_ptr_pairs[0]->second;
+    parent->num_keys++;
+    parent->right_child_ptr = rightNode;
+    cursor->right_child_ptr = nullptr;
+    rightNode->parent_pointer = parent;
+
+    return get_root_tree(parent);
+};
+
+BPlusNode *splitLeaf(BPlusNode *&cursor)
+{
+    BPlusNode *newLeaf = new BPlusNode(LEAF_NODE);
+
+    newLeaf->right_child_ptr = nullptr;
+    cursor->right_child_ptr = nullptr;
+    int mid = ceil(cursor->num_records / 2);
+    for (int i = mid; i < cursor->num_records; i++)
+    {
+        insert_record_leaf(newLeaf, deserializeRecord(cursor->records[i]->second));
+    }
+    cursor->num_records = mid;
+    if (cursor->is_root)
+    {
+        BPlusNode *newRoot = new BPlusNode(INTERNAL_NODE);
+        newRoot->is_root = true;
+        newRoot->key_ptr_pairs[0] = new std::pair<BPlusNode *, int>;
+        newRoot->key_ptr_pairs[0]->first = cursor;
+        newRoot->key_ptr_pairs[0]->second = newLeaf->records[0]->first;
+        newRoot->right_child_ptr = newLeaf;
+        newRoot->num_keys++;
+        cursor->parent_pointer = newRoot;
+        newLeaf->parent_pointer = newRoot;
+        cursor->is_root = false;
+        newLeaf->is_root = false;
+        return newRoot;
+    }
+    else
+    {
+        std::cout << "update parent" << std::endl;
+        return update_parent(cursor, newLeaf);
+    }
+}
+
+// debe solucionarse el problema de actualizar los parent pointers al cambiar de nodo padre
+BPlusNode *splitInternal(BPlusNode *internal)
+{
+    BPlusNode *newInternal = new BPlusNode(INTERNAL_NODE);
+    int mid = ceil(internal->num_keys / 2);
+    for (int i = mid; i < internal->num_keys - 1; i++)
+    {
+        newInternal->key_ptr_pairs[i - mid] = internal->key_ptr_pairs[i + 1];
+        newInternal->key_ptr_pairs[i - mid]->first->parent_pointer = newInternal;
+        newInternal->num_keys++;
+    }
+    internal->num_keys = mid;
+    if (internal->is_root)
+    {
+        newInternal->right_child_ptr = internal->right_child_ptr;
+        newInternal->right_child_ptr->parent_pointer = newInternal;
+        internal->right_child_ptr = internal->key_ptr_pairs[mid]->first;
+        BPlusNode *newRoot = new BPlusNode(INTERNAL_NODE);
+        newRoot->is_root = true;
+        newRoot->key_ptr_pairs[0] = new std::pair<BPlusNode *, int>;
+        newRoot->key_ptr_pairs[0]->first = internal;
+        newRoot->key_ptr_pairs[0]->second = internal->key_ptr_pairs[mid]->second;
+        newRoot->right_child_ptr = newInternal;
+        newRoot->num_keys++;
+        internal->parent_pointer = newRoot;
+        newInternal->parent_pointer = newRoot;
+        internal->is_root = false;
+        newInternal->is_root = false;
+        return newRoot;
+    }
+    else
+    {
+
+        return update_parent(internal, newInternal);
+    }
+}
+
+void BPlusTree::Insert(Record record)
+{
+    BPlusNode *cursor = this->root;
+
+    if (this->root == nullptr)
+    {
+        this->root = new BPlusNode(LEAF_NODE);
+        this->root->is_root = true;
+        insert_record_leaf(this->root, record);
+        this->totalRecords++;
+        this->totalNodes++;
+    }
+    else
+    {
+        cursor = findLeaf(cursor, record.id);
+        insert_record_leaf(cursor, record);
+        this->totalRecords++;
+    }
+    if (cursor != nullptr && cursor->num_records == this->leafSize)
+    {
+        this->root = splitLeaf(cursor);
+        this->totalNodes++;
+    }
+    if (this->root->num_keys == this->internalSize)
+    {
+        this->root = splitInternal(this->root);
+        this->totalNodes++;
+        std::cout << "split internal" << std::endl;
+    }
+}
+
+std::vector<Record> BPlusTree::GetRecords()
+{
+    std::vector<Record> records;
+    get_records_kptr(this->root, records);
+    printBtree(this->root, 0);
+    return records;
 }

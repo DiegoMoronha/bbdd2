@@ -8,7 +8,7 @@ class Database
 {
 private:
     // Table table;
-    BPlusTree bPlusTree = nullptr;
+    BPlusTree bPlusTree = BPlusTree();
 
 public:
     Database(const std::string &filename) {} /* table({0, new Pager(filename)})*/
@@ -16,7 +16,7 @@ public:
     std::string select()
     {
         std::string result = "";
-        std::vector<Record> pageRecords = getRecords(bPlusTree);
+        std::vector<Record> pageRecords = bPlusTree.GetRecords();
         for (size_t j = 0; j < pageRecords.size(); j++)
         {
 
@@ -32,7 +32,7 @@ public:
 
     void insert(Record record)
     {
-        insertB(bPlusTree, record);
+        bPlusTree.Insert(record);
     }
 
     void deletePager(){
@@ -41,12 +41,12 @@ public:
 
     int pages()
     {
-        return bPlusTree->num_keys + 1;
+        return bPlusTree.totalNodes;
     }
 
     bool openDatabase()
     {
-        for (int i = 3; i < 6; i++)
+        for (int i = 3; i < 5; i++)
         {
             auto record = createRecord(i, "user", "email");
             insert(record);
@@ -60,7 +60,6 @@ public:
 
     int numRecords()
     {
-        printBPlusTree(bPlusTree);
-        return countNumRecords(bPlusTree);
+        return bPlusTree.totalRecords;
     }
 };
