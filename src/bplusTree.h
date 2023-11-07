@@ -79,3 +79,5 @@ public:
     void Insert(Record record);
     std::vector<Record> GetRecords();
 };
+
+//
