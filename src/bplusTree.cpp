@@ -1,5 +1,7 @@
 #include "bplusTree.h"
 
+BPlusNode *splitInternal(BPlusNode *internal, BPlusTree *b_plus_tree);
+
 BPlusNode *get_root_tree(BPlusNode *cursor)
 {
     if (cursor->parent_pointer == nullptr)
@@ -12,7 +14,7 @@ BPlusNode *get_root_tree(BPlusNode *cursor)
     }
 }
 
-void printBtree(BPlusNode *cursor, int level)
+void printBtree(BPlusNode *cursor, int level = 0)
 {
     if (cursor == nullptr)
     {
@@ -22,7 +24,7 @@ void printBtree(BPlusNode *cursor, int level)
     {
         for (int i = 0; i < cursor->num_keys; i++)
         {
-            std::cout << "level: " << level << " key: " << cursor->key_ptr_pairs[i]->second << std::endl;
+            std::cout << "level: " << level << " key: " << cursor->key_ptr_pairs[i]->second << " keys: " << cursor->num_keys << std::endl;
             printBtree(cursor->key_ptr_pairs[i]->first, level + 1);
         }
         printBtree(cursor->right_child_ptr, level + 1);
@@ -108,14 +110,35 @@ void insert_record_leaf(BPlusNode *&cursor, Record record)
     cursor->num_records++;
 }
 
-BPlusNode *update_parent(BPlusNode *&cursor, BPlusNode *&rightNode)
+// recorrer el cursor y verificar si cumple con las invariantes
+BPlusNode *check_invariant(BPlusNode *cursor, BPlusTree *b_plus_tree)
+{
+    int limit_internal = b_plus_tree->internalSize;
+    if (cursor == nullptr)
+    {
+        return nullptr;
+    }
+    if (cursor->num_keys == limit_internal)
+    {
+        std::cout << "update cursor" << std::endl;
+        return splitInternal(cursor, b_plus_tree);
+    }
+    if (cursor->parent_pointer == nullptr)
+    {
+        return cursor;
+    }
+    return check_invariant(cursor->parent_pointer, b_plus_tree);
+}
+
+BPlusNode *update_parent(BPlusNode *&cursor, BPlusNode *&rightNode, BPlusTree *b_plus_tree)
 {
 
     BPlusNode *parent = cursor->parent_pointer;
     int pos = parent->num_keys;
     for (int i = 0; i < parent->num_keys; i++)
     {
-        if (cursor->records[0]->first < parent->key_ptr_pairs[i]->second)
+
+        if (cursor->node_type == LEAF_NODE && cursor->records[0]->first < parent->key_ptr_pairs[i]->second)
         {
             pos = i;
             break;
@@ -127,16 +150,15 @@ BPlusNode *update_parent(BPlusNode *&cursor, BPlusNode *&rightNode)
     }
     parent->key_ptr_pairs[pos] = new std::pair<BPlusNode *, int>;
     parent->key_ptr_pairs[pos]->first = cursor;
-    parent->key_ptr_pairs[pos]->second = rightNode->node_type == LEAF_NODE ? rightNode->records[0]->first : rightNode->key_ptr_pairs[0]->second;
+    parent->key_ptr_pairs[pos]->second = rightNode->node_type == LEAF_NODE ? rightNode->records[0]->first : cursor->key_ptr_pairs[cursor->num_keys]->second;
     parent->num_keys++;
     parent->right_child_ptr = rightNode;
-    cursor->right_child_ptr = nullptr;
     rightNode->parent_pointer = parent;
-
-    return get_root_tree(parent);
+    BPlusNode *bTree = check_invariant(parent, b_plus_tree);
+    return get_root_tree(bTree);
 };
 
-BPlusNode *splitLeaf(BPlusNode *&cursor)
+BPlusNode *splitLeaf(BPlusNode *&cursor, BPlusTree *b_plus_tree)
 {
     BPlusNode *newLeaf = new BPlusNode(LEAF_NODE);
 
@@ -166,12 +188,11 @@ BPlusNode *splitLeaf(BPlusNode *&cursor)
     else
     {
         std::cout << "update parent" << std::endl;
-        return update_parent(cursor, newLeaf);
+        return update_parent(cursor, newLeaf, b_plus_tree);
     }
 }
 
-// debe solucionarse el problema de actualizar los parent pointers al cambiar de nodo padre
-BPlusNode *splitInternal(BPlusNode *internal)
+BPlusNode *splitInternal(BPlusNode *internal, BPlusTree *b_plus_tree)
 {
     BPlusNode *newInternal = new BPlusNode(INTERNAL_NODE);
     int mid = ceil(internal->num_keys / 2);
@@ -181,12 +202,14 @@ BPlusNode *splitInternal(BPlusNode *internal)
         newInternal->key_ptr_pairs[i - mid]->first->parent_pointer = newInternal;
         newInternal->num_keys++;
     }
+    newInternal->right_child_ptr = internal->right_child_ptr;
+    newInternal->right_child_ptr->parent_pointer = newInternal; // el padre de su hijo
+    internal->right_child_ptr = internal->key_ptr_pairs[mid]->first;
     internal->num_keys = mid;
+    b_plus_tree->totalNodes++;
     if (internal->is_root)
     {
-        newInternal->right_child_ptr = internal->right_child_ptr;
-        newInternal->right_child_ptr->parent_pointer = newInternal;
-        internal->right_child_ptr = internal->key_ptr_pairs[mid]->first;
+
         BPlusNode *newRoot = new BPlusNode(INTERNAL_NODE);
         newRoot->is_root = true;
         newRoot->key_ptr_pairs[0] = new std::pair<BPlusNode *, int>;
@@ -198,12 +221,12 @@ BPlusNode *splitInternal(BPlusNode *internal)
         newInternal->parent_pointer = newRoot;
         internal->is_root = false;
         newInternal->is_root = false;
+        b_plus_tree->totalNodes++;
         return newRoot;
     }
     else
     {
-
-        return update_parent(internal, newInternal);
+        return update_parent(internal, newInternal, b_plus_tree);
     }
 }
 
@@ -227,13 +250,11 @@ void BPlusTree::Insert(Record record)
     }
     if (cursor != nullptr && cursor->num_records == this->leafSize)
     {
-        this->root = splitLeaf(cursor);
-        this->totalNodes++;
+        this->root = splitLeaf(cursor, this);
     }
     if (this->root->num_keys == this->internalSize)
     {
-        this->root = splitInternal(this->root);
-        this->totalNodes++;
+        this->root = splitInternal(this->root, this);
         std::cout << "split internal" << std::endl;
     }
 }
@@ -242,6 +263,5 @@ std::vector<Record> BPlusTree::GetRecords()
 {
     std::vector<Record> records;
     get_records_kptr(this->root, records);
-    printBtree(this->root, 0);
     return records;
 }

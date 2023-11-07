@@ -46,11 +46,6 @@ public:
 
     bool openDatabase()
     {
-        for (int i = 3; i < 5; i++)
-        {
-            auto record = createRecord(i, "user", "email");
-            insert(record);
-        }
         return true;
     }
 

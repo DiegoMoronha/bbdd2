@@ -1,7 +1,7 @@
-#define MAX_RECORDS 3
+#define MAX_RECORDS 14
 #define KEY_SIZE 4
 #define VALUE_SIZE 291
-#define NODE_SIZE 3
+#define NODE_SIZE 511
 #define LEAF_NODE 0
 #define INTERNAL_NODE 1
 
@@ -35,6 +35,26 @@ struct BPlusNode
         this->key_ptr_pairs = new std::pair<BPlusNode *, int> *[max_keys];
         this->num_keys = 0;
         this->num_records = 0;
+    };
+
+    ~BPlusNode()
+    {
+        if (this->node_type == LEAF_NODE)
+        {
+            for (int i = 0; i < num_records; i++)
+            {
+                delete records[i];
+            }
+            delete[] records;
+        }
+        else
+        {
+            for (int i = 0; i < num_keys; i++)
+            {
+                delete key_ptr_pairs[i]->first;
+            }
+            delete[] key_ptr_pairs;
+        }
     };
 };
 
