@@ -120,7 +120,6 @@ BPlusNode *check_invariant(BPlusNode *cursor, BPlusTree *b_plus_tree)
     }
     if (cursor->num_keys == limit_internal)
     {
-        std::cout << "update cursor" << std::endl;
         return splitInternal(cursor, b_plus_tree);
     }
     if (cursor->parent_pointer == nullptr)
@@ -183,11 +182,11 @@ BPlusNode *splitLeaf(BPlusNode *&cursor, BPlusTree *b_plus_tree)
         newLeaf->parent_pointer = newRoot;
         cursor->is_root = false;
         newLeaf->is_root = false;
+        b_plus_tree->totalNodes += 2; // se suma el nodo interno mas el nuevo nodo hoja
         return newRoot;
     }
     else
     {
-        std::cout << "update parent" << std::endl;
         return update_parent(cursor, newLeaf, b_plus_tree);
     }
 }
@@ -255,7 +254,6 @@ void BPlusTree::Insert(Record record)
     if (this->root->num_keys == this->internalSize)
     {
         this->root = splitInternal(this->root, this);
-        std::cout << "split internal" << std::endl;
     }
 }
 
