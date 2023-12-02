@@ -36,10 +36,6 @@ public:
         bPlusTree.Insert(record);
     }
 
-    void deletePager(){
-        //  delete table.pager;
-    };
-
     int pages()
     {
         return bPlusTree.totalNodes;
@@ -51,8 +47,6 @@ public:
         int numpages;
         int numrecords;
         pager.calculateMetadata(numpages, numrecords);
-        std::cout << "num pages" << numpages << std::endl;
-        std::cout << "num records" << numrecords << std::endl;
         bPlusTree.deserealizeBtree(bPlusTree.root, pager.getFile(), numrecords, numpages);
         return open;
     }
