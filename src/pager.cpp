@@ -86,12 +86,24 @@ public:
         file.write(page.records, page.numRecords * 291);
     }
 
+    std::fstream &getFile()
+    {
+        return file;
+    }
+
     void readPageFromFile(int pageNum, Page &page)
     {
         setPageRecords(page, pageNum);
         int pos = pageNum * PAGE_SIZE;
         file.seekg(pos);
         file.read(page.records, page.numRecords * 291);
+    }
+
+    void readFile(char *buffer, int size)
+    {
+        file.open(filename, std::ios::in | std::ios::binary);
+
+        file.read(buffer, size);
     }
 
     void setPageRecords(Page &page, int pageNum)

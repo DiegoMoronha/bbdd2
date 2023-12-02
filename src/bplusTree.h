@@ -12,7 +12,7 @@
 #include "record.h"
 #include <map>
 #include <algorithm>
-
+#include <fstream>
 struct BPlusNode
 {
     unsigned char node_type;   // 1 byte
@@ -78,6 +78,8 @@ struct BPlusTree
 public:
     void Insert(Record record);
     std::vector<Record> GetRecords();
+    void serializeBTree(BPlusNode *cursor, std::fstream &file, int &pos, char *buffer, int &reg);
+    void deserealizeBtree(BPlusNode *&cursor, std::fstream &file, int numRecords, int pages);
 };
 
 //

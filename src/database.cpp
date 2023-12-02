@@ -3,15 +3,16 @@
 
 #include <vector>
 #include "bplusTree.h"
-// #include "table.h"
+#include "pager.cpp"
 class Database
 {
 private:
     // Table table;
     BPlusTree bPlusTree = BPlusTree();
+    Pager pager;
 
 public:
-    Database(const std::string &filename) {} /* table({0, new Pager(filename)})*/
+    Database(const std::string &filename) : pager(Pager(filename)) {}
 
     std::string select()
     {
@@ -46,11 +47,29 @@ public:
 
     bool openDatabase()
     {
-        return true;
+        bool open = pager.openFile();
+        int numpages;
+        int numrecords;
+        pager.calculateMetadata(numpages, numrecords);
+        std::cout << "num pages" << numpages << std::endl;
+        std::cout << "num records" << numrecords << std::endl;
+        bPlusTree.deserealizeBtree(bPlusTree.root, pager.getFile(), numrecords, numpages);
+        return open;
     }
 
     void closeDatabase()
     {
+
+        auto &file = pager.getFile();
+        file.close();
+        pager.createOrWriteFile();
+        const int size = bPlusTree.totalRecords * 291;
+        char *buffer = new char[size];
+        int pos = 0;
+        int reg = 0;
+        bPlusTree.serializeBTree(bPlusTree.root, file, pos, buffer, reg);
+        delete buffer;
+        file.close();
     }
 
     int numRecords()

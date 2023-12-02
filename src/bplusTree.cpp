@@ -263,3 +263,67 @@ std::vector<Record> BPlusTree::GetRecords()
     get_records_kptr(this->root, records);
     return records;
 }
+
+void BPlusTree::serializeBTree(BPlusNode *cursor, std::fstream &file, int &pos, char *buffer, int &reg)
+{
+    if (cursor == nullptr)
+    {
+        return;
+    }
+    if (cursor->node_type != LEAF_NODE)
+    {
+        for (int i = 0; i < cursor->num_keys; i++)
+        {
+            serializeBTree(cursor->key_ptr_pairs[i]->first, file, pos, buffer, reg);
+        }
+        serializeBTree(cursor->right_child_ptr, file, pos, buffer, reg);
+    }
+    else
+    {
+        for (int i = 0; i < cursor->num_records; i++)
+        {
+            memcpy(buffer, cursor->records[i]->second, 291);
+            file.seekp(pos);
+            file.write(buffer, 291);
+            reg++;
+            int resultado = 4096 * floor(reg / 14);
+            if (resultado != 0 && ((reg % 14) == 0))
+            {
+                pos = resultado;
+            }
+            else
+            {
+                pos += 291;
+            }
+        }
+    }
+}
+
+void BPlusTree::deserealizeBtree(BPlusNode *&cursor, std::fstream &file, int numRecords, int pages)
+{
+    char *buffer = new char[4096 * pages];
+    int pos = 0;
+    int originalRecords = numRecords;
+    for (int i = 0; i < pages; i++)
+    {
+        file.seekg(pos);
+        file.read(buffer, 291 * numRecords);
+        if ((i >= (pages - 1) && originalRecords % 14 != 0))
+        {
+            numRecords = (originalRecords % 14);
+        }
+        else
+        {
+            numRecords = originalRecords % 14 == 0 ? originalRecords : 14;
+        }
+
+        for (int j = 0; j < numRecords; j++)
+        {
+            Record rec = deserializeRecord(&buffer[j * 291]);
+            this->Insert(rec);
+        }
+        pos = 4096 * floor(numRecords / 14) * (i + 1);
+        ;
+    }
+    delete buffer;
+}
